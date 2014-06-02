@@ -12,6 +12,7 @@ A camera object has the following attributes::
     .. up:: (Optional.) One of 'x', 'y', or 'z'
     .. location:: (Optional.) Indicates the location of the camera.
     .. direction:: (Optional.) Indicates the direction of the camera.
+    .. look_at:: (Optional.) Indicates an object that the camera is looking at.
 
 """
 
@@ -129,6 +130,10 @@ class _SdlWriter():
             if hasattr(cam, 'direction'):
                 self._output_line("direction {}".format(
                     self._vert_to_str(cam.direction)))
+
+            if hasattr(cam, 'look_at'):
+                self._output_line("look_at {}".format(
+                    self._vert_to_str(cam.look_at)))
 
     def write(self):
         self._write_camera(self._scene.camera)

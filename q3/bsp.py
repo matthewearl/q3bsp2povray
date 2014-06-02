@@ -143,10 +143,11 @@ class _VertexLump(_StructLump):
         self._bsp.verts = []
 
     def _read_from_unpacked(self, unpacked): 
+        # Backwards ordering due to Quake 3 treating Z as up.
         self._bsp.verts.append(
             Vert(x=unpacked[0],
-                 y=unpacked[1],
-                 z=unpacked[2]))
+                 y=unpacked[2],
+                 z=unpacked[1]))
 
 
 @_lump_class(_LumpEnum.FACES)

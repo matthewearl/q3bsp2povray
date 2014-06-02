@@ -75,11 +75,17 @@ def _fix_types_for_ent(ent):
     For example, make `origin` a tuple of floats.
 
     """
+
     def vec(s):
         return tuple(float(x) for x in s.split(' '))
 
+    def vert(s):
+        # Fix up Quake 3's weird coordinate system.
+        out = vec(s)
+        return (out[0], out[2], out[1])
+
     key_types = {
-        'origin': vec,
+        'origin': vert,
         'angle': float,
         'radius': float,
         'light': float,

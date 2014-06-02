@@ -25,22 +25,18 @@ class _BspCamera():
     def _get_entity(self, field, val):
         ents = [ent for ent in self._bsp.entities
                 if field in ent and ent[field] == val]
-        assert len(ents) == 1
+        assert len(ents) >= 1
         return ents[0]
 
     def __init__(self, bsp):
         self._bsp = bsp
-
-        # Quake 3 has the "z" coordinates being up/down.
-        self.up = "z"
 
         # Calculate the location/direction.
         view_ent = self._get_entity('classname', self.VIEW_CLASS)
         target_ent = self._get_entity('targetname', view_ent["target"])
 
         self.location = view_ent["origin"]
-        self.direction = tuple(a - b for a, b in zip(target_ent["origin"],
-                                                     view_ent["origin"]))
+        self.look_at = target_ent["origin"]
 
         # Print a comment making it clear which entities were used for the
         # camera.
