@@ -1,5 +1,10 @@
 import re
 
+"""
+Parse entity strings.
+
+"""
+
 __all__ = (
         'parse',
 )
