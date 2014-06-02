@@ -14,11 +14,11 @@ __all__ = (
 
 Face = collections.namedtuple('Face',
     ['verts',
-    ]
+    ]) 
 
 Vert = collections.namedtuple('Vert',
     ['x', 'y', 'z',
-    ]
+    ])
 
 class _LumpEnum:
     ENTITIES = 0
@@ -45,17 +45,17 @@ _lump_classes = {}
 
 def _lump_class(lump_num):
     def decorator(cls):
-        lump_classes[lump_num] = cls
+        _lump_classes[lump_num] = cls
         return cls
+    return decorator
     
 class _Lump(metaclass=abc.ABCMeta):
-    @abstractmethod
-    def __init__(self, bsp, bsp_file, offset, size):
+    def __init__(self, bsp, bsp_file, offset, length):
         """Initialize the lump."""
         self._bsp = bsp
         self._bsp_file = bsp_file
         self._offset = offset
-        self._size = size
+        self._length = length
 
     def _records(self):
         """
@@ -65,18 +65,19 @@ class _Lump(metaclass=abc.ABCMeta):
         """
         self._bsp_file.seek(self._offset)
         rec_size = struct.calcsize(self._struct_fmt)
-        assert self._size % rec_size == 0
-        for idx in range(self._size // rec_size):
-            out = self._bsp_file.read(self._size)
-            assert len(out) == self._size
+        assert self._length % rec_size == 0
+        for idx in range(self._length // rec_size):
+            out = self._bsp_file.read(rec_size)
+            assert len(out) == rec_size, "{} != {}".format(
+                len(out), rec_size)
             yield out
     
-    @abstractmethod
+    @abc.abstractmethod
     def _start_lump(self):
         raise NotImplementedError
 
-    @abstractmethod
-    def _rec_from_unpacked(self, unpacked):
+    @abc.abstractmethod
+    def _read_from_unpacked(self, unpacked):
         raise NotImplementedError
 
     def _read_rec(self, rec_bytes):
@@ -98,7 +99,7 @@ class _Lump(metaclass=abc.ABCMeta):
         
         """
         self._start_lump()
-        for rec_bytes in self._records:
+        for rec_bytes in self._records():
             self._read_rec(rec_bytes)
 
 @_lump_class(_LumpEnum.VERTEXES)
@@ -115,7 +116,7 @@ class _VertexLump(_Lump):
 
     """
 
-    _struct_fmt = "<f<f<f<f<f<f<f<f<f<fBBBB"
+    _struct_fmt = "<ffffffffffBBBB"
 
     def _start_lump(self):
         self._bsp.verts = []
@@ -149,7 +150,7 @@ class _FaceLump(_Lump):
 
     """
 
-    _struct_fmt = "<I<I<I<I<I<I<I<I<I<I<I<I<f<f<f<f<f<f<f<f<f<f<f<f<I<I"
+    _struct_fmt = "<IIIIIIIIIIIIffffffffffffII"
 
     def _start_lump(self):
         self._bsp.faces = []
@@ -157,7 +158,30 @@ class _FaceLump(_Lump):
     def _read_from_unpacked(self, unpacked): 
         vert_indices = range(unpacked[3], unpacked[3] + unpacked[4])
         self._bsp.faces.append(
-            Face(verts=[self._bsp_file.verts[i] for i in vert_indices])) 
+            Face(verts=[self._bsp.verts[i] for i in vert_indices])) 
+
+class _SeekableFile():
+    """
+    It turns out files read from a zip aren't seekable.
+
+    Wrap the file-like objects so that they are.
+
+    """
+
+    def __init__(self, f):
+        self._data = f.read() 
+        self._offs = 0
+
+    def seek(self, offs):
+        self._offs = offs
+
+    def read(self, count):
+        new_offs = self._offs + count
+        out = self._data[self._offs:new_offs]
+        self._offs = new_offs
+
+        return out
+
 
 _LumpEntry = collections.namedtuple('_LumpEntry', ['offset', 'length'])
 
@@ -168,9 +192,9 @@ class Bsp():
     """
 
     def _read_lump_entry(self):
-        fmt = "<I<I"
+        fmt = "<II"
         unpacked = struct.unpack(fmt,
-                    self._bsp_file.read(fmt.calcsize(fmt)))
+                    self._bsp_file.read(struct.calcsize(fmt)))
         return _LumpEntry._make(unpacked)
 
     def _read_lump_dir(self):
@@ -178,19 +202,19 @@ class Bsp():
             
         self._lump_dir = {}
         for lump_num in range(_LumpEnum.COUNT):
-            self._lump_dir[lump_num] = self._read_lump_entry(self._bsp_file)
+            self._lump_dir[lump_num] = self._read_lump_entry()
         
     def __init__(self, bsp_file): 
-        self._bsp_file = bsp_file
+        self._bsp_file = _SeekableFile(bsp_file)
 
         self._read_lump_dir()
 
         _lump_readers = {
             lump_num: cls(bsp=self,
-                          bsp_file=bsp_file,
+                          bsp_file=self._bsp_file,
                           offset=self._lump_dir[lump_num].offset,
-                          size=self._lump_dir[lump_num].size)
-            for lump_num, cls in _lump_classes
+                          length=self._lump_dir[lump_num].length)
+            for lump_num, cls in _lump_classes.items()
         }
 
         _lump_readers[_LumpEnum.VERTEXES].read()
