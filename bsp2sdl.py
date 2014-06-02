@@ -7,6 +7,7 @@ __all__ = (
 
 from pprint import pprint
 import argparse
+import collections
 import pprint
 import sys
 
@@ -59,6 +60,8 @@ class _BspTri():
     def __len__(self):
         return len(self._verts)
 
+_BspLight = collections.namedtuple('_BspLight', ['location', 'color'])
+
 class BspScene():
     """
     An SDL scene, constructed from a `q3.bsp.Bsp` instance.
@@ -88,6 +91,21 @@ class BspScene():
                        face.verts[vert_idx - 1],
                        face.verts[vert_idx],
                        comment=comment)
+
+    @property
+    def lights(self):
+        for light_ent in (ent for ent in self._bsp.entities
+                        if ent['classname'] == 'light'):
+
+            if not "_color" in light_ent:
+                color = (1.0, 1.0, 1.0)
+            else:
+                color = light_ent["_color"]
+
+            # Scale color by the "light" attribute
+            color = tuple(x * light_ent['light'] for x in color)
+            yield _BspLight(location=light_ent['origin'],
+                            color=color)
 
     @property
     def camera(self):

@@ -3,6 +3,7 @@
 Scene object attributes:
     .. tris::  An iterable of triangle objects (see below).
     .. camera:: A camera object (see below).
+    .. lights:: An iterable of light objects (see below).
 
 A triangle object is a triple of vertices (vertex objects). A vertex object is
 a triple of coordinates.
@@ -13,6 +14,11 @@ A camera object has the following attributes::
     .. location:: (Optional.) Indicates the location of the camera.
     .. direction:: (Optional.) Indicates the direction of the camera.
     .. look_at:: (Optional.) Indicates an object that the camera is looking at.
+
+A light object has the following attributes::
+    .. location:: Coordinates of the light.
+    .. color:: A triple representing an RGB value.
+    .. radius:: (Optional.)
 
 """
 
@@ -135,11 +141,20 @@ class _SdlWriter():
                 self._output_line("look_at {}".format(
                     self._vert_to_str(cam.look_at)))
 
+    @_element_writer
+    def _write_light(self, light):
+        with self._block("light"):
+            self._output_line(self._vert_to_str(light.location))
+            if hasattr(light, "color"):
+                self._output_line("color {}".format(
+                    self._vert_to_str(light.location)))
+
     def write(self):
         self._write_camera(self._scene.camera)
+        for light in self._scene.lights:
+            self._write_light(light)
         for tri in self._scene.tris:
             self._write_tri(tri)
-
 
 def write(sdl_file, scene):
     """
