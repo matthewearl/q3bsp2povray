@@ -1,7 +1,16 @@
-
 import abc
 import collections
 import struct
+
+"""
+Read a BSP file.
+
+"""
+
+__all__ = (
+    'Bsp',
+)
+    
 
 Face = collections.namedtuple('Face',
     ['verts',
@@ -41,13 +50,14 @@ def _lump_class(lump_num):
     
 class _Lump(metaclass=abc.ABCMeta):
     @abstractmethod
-    def __init__(self, bsp_file, offset, size):
+    def __init__(self, bsp, bsp_file, offset, size):
         """Initialize the lump."""
+        self._bsp = bsp
         self._bsp_file = bsp_file
         self._offset = offset
         self._size = size
 
-    def _records():
+    def _records(self):
         """
         Generate bytes objects, each one containing the data for a record from
         this chunk.
@@ -62,27 +72,32 @@ class _Lump(metaclass=abc.ABCMeta):
             yield out
     
     @abstractmethod
-    def _rec_from_internal_tuple(internal_tuple):
+    def _start_lump(self):
         raise NotImplementedError
 
-    def _read_rec(rec_bytes):
+    @abstractmethod
+    def _rec_from_unpacked(self, unpacked):
+        raise NotImplementedError
+
+    def _read_rec(self, rec_bytes):
         """
         Read a record from the lump.
 
-        Update self._bsp_file with the data from the lump.
+        Update `self._bsp` with the data from the lump.
 
         """
         unpacked = struct.unpack(self._struct_fmt, rec_bytes)
 
         self._read_from_unpacked(unpacked)
 
-    def read():
+    def read(self):
         """
         Read the lump.
 
-        Update self._bsp_file with the data from the lump.
+        Update with the data from the lump.
         
         """
+        self._start_lump()
         for rec_bytes in self._records:
             self._read_rec(rec_bytes)
 
@@ -102,11 +117,11 @@ class _VertexLump(_Lump):
 
     _struct_fmt = "<f<f<f<f<f<f<f<f<f<fBBBB"
 
-    def _start_read(self):
-        self._bsp_file.verts = []
+    def _start_lump(self):
+        self._bsp.verts = []
 
     def _read_from_unpacked(self, unpacked): 
-        self._bsp_file.verts.append(
+        self._bsp.verts.append(
             Vert(x=unpacked[0],
                  y=unpacked[1],
                  z=unpacked[2]))
@@ -136,17 +151,49 @@ class _FaceLump(_Lump):
 
     _struct_fmt = "<I<I<I<I<I<I<I<I<I<I<I<I<f<f<f<f<f<f<f<f<f<f<f<f<I<I"
 
-    def _start_read(self):
-        self._bsp_file.faces = []
+    def _start_lump(self):
+        self._bsp.faces = []
 
     def _read_from_unpacked(self, unpacked): 
         vert_indices = range(unpacked[3], unpacked[3] + unpacked[4])
-        self._bsp_file.faces.append(
+        self._bsp.faces.append(
             Face(verts=[self._bsp_file.verts[i] for i in vert_indices])) 
 
+_LumpEntry = collections.namedtuple('_LumpEntry', ['offset', 'length'])
 
 class Bsp():
+    """
+    Represents a BSP file.
+
+    """
+
+    def _read_lump_entry(self):
+        fmt = "<I<I"
+        unpacked = struct.unpack(fmt,
+                    self._bsp_file.read(fmt.calcsize(fmt)))
+        return _LumpEntry._make(unpacked)
+
+    def _read_lump_dir(self):
+        self._bsp_file.seek(8)
+            
+        self._lump_dir = {}
+        for lump_num in range(_LumpEnum.COUNT):
+            self._lump_dir[lump_num] = self._read_lump_entry(self._bsp_file)
+        
     def __init__(self, bsp_file): 
-    def faces():
+        self._bsp_file = bsp_file
+
+        self._read_lump_dir()
+
+        _lump_readers = {
+            lump_num: cls(bsp=self,
+                          bsp_file=bsp_file,
+                          offset=self._lump_dir[lump_num].offset,
+                          size=self._lump_dir[lump_num].size)
+            for lump_num, cls in _lump_classes
+        }
+
+        _lump_readers[_LumpEnum.VERTEXES].read()
+        _lump_readers[_LumpEnum.FACES].read()
 
 
