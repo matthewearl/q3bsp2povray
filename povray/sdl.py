@@ -16,7 +16,7 @@ A camera object has the following attributes::
 """
 
 
-__all__ = ( 
+__all__ = (
     'write',
     'CameraType',
 )
@@ -66,7 +66,7 @@ def _element_writer(meth):
     """
     def _wrapped(self, element):
         self._write_comment(element)
-        self.meth(element)
+        meth(self, element)
 
     return _wrapped
 
@@ -78,7 +78,7 @@ class _SdlWriter():
         self._indent = 0
 
     def _output_line(self, line):
-        self._sdl_file.write("  " * indent + line + "\n")
+        self._sdl_file.write("  " * self._indent + line + "\n")
 
     @contextlib.contextmanager
     def _block(self, name):
@@ -95,12 +95,12 @@ class _SdlWriter():
             self._output_line(line)
 
     def _write_comment(self, element):
-        if hasattr(obj, "comment"):
+        if hasattr(element, "comment"):
             self._output_lines("// {}".format(line)
-                    for line in obj.comment.splitlines())
+                    for line in element.comment.splitlines())
 
     def _vert_to_str(self, vert):
-        return "<{}>,".format(", ".join(x for x in vert))
+        return "<{}>".format(", ".join(str(x) for x in vert))
 
     @_element_writer
     def _write_tri(self, tri):
@@ -110,36 +110,35 @@ class _SdlWriter():
 
             #@@@ Here so that triangles can be differentiated under uniform
             # (or no) lighting.
-            self._output_line("pigment {{ color rgb {} {}".format(
+            self._output_line("pigment {{ color rgb {} }}".format(
                 self._vert_to_str(_random_color())))
 
     @_element_writer
     def _write_camera(self, cam):
         with self._block("camera"):
-            if hasattr(cam, "type")
+            if hasattr(cam, "type"):
                 self._output_line(CameraType.to_str(cam.type))
 
             if hasattr(cam, "up"):
                 assert cam.up in ("x", "y", "z")
                 self._output_line("up {}".format(cam.up))
-
             if hasattr(cam, 'location'):
                 self._output_line("location {}".format(
-                    self._vert_to_strcam.location)
+                    self._vert_to_str(cam.location)))
 
             if hasattr(cam, 'direction'):
                 self._output_line("direction {}".format(
-                    self._vert_to_strcam.direction)
+                    self._vert_to_str(cam.direction)))
 
     def write(self):
-        self._write_camera(tri)
-        for tri in self.scene.tris:
-            self._write_triangles(tri)
+        self._write_camera(self._scene.camera)
+        for tri in self._scene.tris:
+            self._write_tri(tri)
 
 
 def write(sdl_file, scene):
     """
-    Write a scene to a .sdl file
+    Write a scene to a SDL file
 
     """
 

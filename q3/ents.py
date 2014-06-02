@@ -96,5 +96,5 @@ def parse(ents_str):
 
     """
     ents_lines = ents_str.splitlines()
-    return (_fix_types_for_ent(ent) for ent in _ents_gen(ents_lines))
+    return [_fix_types_for_ent(ent) for ent in _ents_gen(ents_lines)]
 
