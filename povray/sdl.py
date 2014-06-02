@@ -15,12 +15,20 @@ A camera object has the following attributes::
 
 """
 
+
 __all__ = ( 
     'write',
     'CameraType',
 )
 
+
 import contextlib
+import random
+
+
+def _random_color():
+    return (random.random(), random.random(), random.random(),)
+
 
 #@@@ Replace with enums
 class CameraType:
@@ -62,6 +70,7 @@ def _element_writer(meth):
 
     return _wrapped
 
+
 class _SdlWriter():
     def __init__(self, sdl_file, scene):
         self._scene = scene
@@ -99,18 +108,31 @@ class _SdlWriter():
             assert len(tri) == 3
             self._output_line(", ".join(self._vert_to_str(v) for v in tri))
 
-    def _write_cam_type(self, cam):
-        if hasattr(cam, "type")
-            
+            #@@@ Here so that triangles can be differentiated under uniform
+            # (or no) lighting.
+            self._output_line("pigment {{ color rgb {} {}".format(
+                self._vert_to_str(_random_color())))
+
     @_element_writer
     def _write_camera(self, cam):
         with self._block("camera"):
-            
-            self._output_line("up z")
-            self._output_line("location {}".format(
-            self._output_line("look_at {}".format(self._vert_to_strcam.get_target())
+            if hasattr(cam, "type")
+                self._output_line(CameraType.to_str(cam.type))
+
+            if hasattr(cam, "up"):
+                assert cam.up in ("x", "y", "z")
+                self._output_line("up {}".format(cam.up))
+
+            if hasattr(cam, 'location'):
+                self._output_line("location {}".format(
+                    self._vert_to_strcam.location)
+
+            if hasattr(cam, 'direction'):
+                self._output_line("direction {}".format(
+                    self._vert_to_strcam.direction)
 
     def write(self):
+        self._write_camera(tri)
         for tri in self.scene.tris:
             self._write_triangles(tri)
 
