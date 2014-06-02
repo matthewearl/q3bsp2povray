@@ -2,6 +2,8 @@ import abc
 import collections
 import struct
 
+from . import ents
+
 """
 Read a BSP file.
 
@@ -197,7 +199,8 @@ class _EntitiesLump(_Lump):
     """
     def _read(self):
         self._bsp_file.seek(self._offset)
-        self._bsp.entities = self._bsp_file.read(self._length).decode('ascii')
+        ents_str = self._bsp_file.read(self._length).decode('ascii')
+        self._bsp.entities = ents.parse(ents_str)
 
 
 class _SeekableFile():

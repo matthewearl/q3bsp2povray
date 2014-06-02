@@ -12,7 +12,7 @@ class _InvalidKeyValue(Exception):
 
 _LINE_RE = r'"([^"]*)" "([^"]*)"'
 
-def _parse_key_value(self, line):
+def _parse_key_value(line):
     m = re.match(_LINE_RE, line)
 
     if not m:
@@ -20,20 +20,24 @@ def _parse_key_value(self, line):
 
     return m.groups()
 
-def _ents_gen(self, ents_lines):
+def _ents_gen(ents_lines):
     """
     Generate entities, each of which is a mapping of strings onto strings.
 
     """
     it = iter(enumerate(ents_lines))
 
+    line = None
+    num = -1
+
     def step():
         nonlocal line, num
-        line = None
-        num = -1
-        while line is None or line == '':
-            line, num = next(it)
+        num, line = next(it)
+        while line is None or line == '' or line == '\x00':
+            num, line = next(it)
+            num += 1
             line = line.strip()
+        print("*** Read line {!r}".format(line))
 
     def err(s):
         raise BadEntsString("On line {} {}: {}".format(
@@ -48,19 +52,45 @@ def _ents_gen(self, ents_lines):
         step()
         # Each iteration corresponds with a line.
         while True:
-            if line == '}'
+            if line == '}':
                 yield item
                 step()
                 break
             else:
                 try:
-                    key, val = self._parse_key_value(line)
+                    key, value = _parse_key_value(line)
+                    item[key] = value
+                    step()
                 except _InvalidKeyValue as e:
                     err(str(e))
-                finally:
-                    item[key] = value
-            
-def 
-def __init__(self, ents_str):
-    self.ents = list
-    for line in ents_str.splitlines():
+
+def _fix_types_for_ent(ent):
+    """
+    Convert values of the given entity from strings to more appropriate types.
+
+    For example, make `origin` a tuple of floats.
+
+    """
+    def vec(s):
+        return tuple(float(x) for x in s.split(' '))
+
+    key_types = {
+        'origin': vec,
+        'angle': float,
+        'radius': float,
+        'light': float,
+        'spawnflags': int,
+        '_color': vec
+    }
+
+    return { key: key_types.get(key, lambda x: x)(value) 
+                for key, value in ent.items() }
+
+def parse(ents_str):
+    """
+    Parse an ents string into an iterable of dicts.
+
+    """
+    ents_lines = ents_str.splitlines()
+    return (_fix_types_for_ent(ent) for ent in _ents_gen(ents_lines))
+

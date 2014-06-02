@@ -10,5 +10,5 @@ with fs.open("maps/q3dm7.bsp") as bsp_file:
     bsp = q3.bsp.Bsp(bsp_file)
 
     #pprint(bsp.faces)
-    print(bsp.entities)
+    pprint(list(bsp.entities))
 
