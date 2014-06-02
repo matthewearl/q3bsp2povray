@@ -37,7 +37,6 @@ def _ents_gen(ents_lines):
             num, line = next(it)
             num += 1
             line = line.strip()
-        print("*** Read line {!r}".format(line))
 
     def err(s):
         raise BadEntsString("On line {} {}: {}".format(
