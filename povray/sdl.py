@@ -18,7 +18,6 @@ A camera object has the following attributes::
 A light object has the following attributes::
     .. location:: Coordinates of the light.
     .. color:: A triple representing an RGB value.
-    .. radius:: (Optional.)
 
 """
 
@@ -117,8 +116,11 @@ class _SdlWriter():
 
             #@@@ Here so that triangles can be differentiated under uniform
             # (or no) lighting.
-            self._output_line("pigment {{ color rgb {} }}".format(
-                self._vert_to_str(_random_color())))
+            #self._output_line("pigment {{ color rgb {} }}".format(
+            # self._vert_to_str(_random_color())))
+            with self._block("texture"):
+                self._output_line("pigment { color <1., 1., 1.> }")
+                self._output_line("finish { ambient .0 diffuse 1. }") 
 
     @_element_writer
     def _write_camera(self, cam):
@@ -143,11 +145,11 @@ class _SdlWriter():
 
     @_element_writer
     def _write_light(self, light):
-        with self._block("light"):
+        with self._block("light_source"):
             self._output_line(self._vert_to_str(light.location))
             if hasattr(light, "color"):
                 self._output_line("color {}".format(
-                    self._vert_to_str(light.location)))
+                    self._vert_to_str(light.color)))
 
     def write(self):
         self._write_camera(self._scene.camera)
