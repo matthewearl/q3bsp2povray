@@ -7,8 +7,7 @@ from . import ents
 """
 Read a BSP file.
 
-Please see http://www.mralligator.com/q3/#Entities for details of the file
-format.
+Please see http://www.mralligator.com/q3/ for details of the file format.
 
 """
 
@@ -133,14 +132,8 @@ class _StructLump(_Lump):
 @_lump_class(_LumpEnum.VERTEXES)
 class _VertexLump(_StructLump):
     """
-    The vertexes lump stores lists of vertices used to describe faces. There
-    are a total of length / sizeof(vertex) records in the lump, where length is
-    the size of the lump itself, as specified in the lump directory.
-
-    0 float[3] position   Vertex position.
-    3 float[2][2] texcoord    Vertex texture coordinates. 0=surface, 1=lightmap.
-    7 float[3] normal Vertex normal.
-    10 ubyte[4] color  Vertex color. RGBA.
+    Please see http://www.mralligator.com/q3/#Vertexes for details of this
+    lump.
 
     """
 
@@ -159,22 +152,8 @@ class _VertexLump(_StructLump):
 @_lump_class(_LumpEnum.FACES)
 class _FaceLump(_StructLump):
     """
-    The faces lump stores information used to render the surfaces of the map.
-
-    0  int texture Texture index.
-    1  int effect  Index into lump 12 (Effects), or -1.
-    2  int type    Face type. 1=polygon, 2=patch, 3=mesh, 4=billboard
-    3  int vertex  Index of first vertex.
-    4  int n_vertexes  Number of vertices.
-    5  int meshvert    Index of first meshvert.
-    6  int n_meshverts Number of meshverts.
-    7  int lm_index    Lightmap index.
-    8  int[2] lm_start Corner of this face's lightmap image in lightmap.
-    10 int[2] lm_size  Size of this face's lightmap image in lightmap.
-    12 float[3] lm_origin  World space origin of lightmap.
-    15 float[2][3] lm_vecs World space lightmap s and t unit vectors.
-    21 float[3] normal Surface normal.
-    24 int[2] size Patch dimensions.
+    Please see http://www.mralligator.com/q3/#Faces for details of this
+    lump.
 
     """
 
@@ -191,10 +170,8 @@ class _FaceLump(_StructLump):
 @_lump_class(_LumpEnum.ENTITIES)
 class _EntitiesLump(_Lump):
     """
-    The entities lump stores game-related map information, including
-    information about the map name, weapons, health, armor, triggers, spawn
-    points, lights, and .md3 models to be placed in the map. The lump contains
-    only one record, a string that describes all of the entities:
+    Please see http://www.mralligator.com/q3/#Entities for details of this
+    lump.
 
     """
     def _read(self):
