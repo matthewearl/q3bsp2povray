@@ -5,6 +5,9 @@ import struct
 """
 Read a BSP file.
 
+Please see http://www.mralligator.com/q3/#Entities for details of the file
+format.
+
 """
 
 __all__ = (
@@ -43,19 +46,42 @@ class _LumpEnum:
 
 _lump_classes = {}
 
+
 def _lump_class(lump_num):
     def decorator(cls):
         _lump_classes[lump_num] = cls
         return cls
     return decorator
     
+
 class _Lump(metaclass=abc.ABCMeta):
+    """
+    Abstract base class for all lump readers classes.
+
+    """
     def __init__(self, bsp, bsp_file, offset, length):
         """Initialize the lump."""
         self._bsp = bsp
         self._bsp_file = bsp_file
         self._offset = offset
         self._length = length
+
+    @abc.abstractmethod
+    def _read(self):
+        """
+        Read the lump.
+
+        Update with the data from the lump.
+        
+        """
+        raise NotImplementedError
+
+class _StructLump(_Lump):
+    """
+    A lump that is a sequence of fixed length records, each of which can be
+    decoded with a `struct` module format string.
+
+    """
 
     def _records(self):
         """
@@ -91,7 +117,7 @@ class _Lump(metaclass=abc.ABCMeta):
 
         self._read_from_unpacked(unpacked)
 
-    def read(self):
+    def _read(self):
         """
         Read the lump.
 
@@ -103,7 +129,7 @@ class _Lump(metaclass=abc.ABCMeta):
             self._read_rec(rec_bytes)
 
 @_lump_class(_LumpEnum.VERTEXES)
-class _VertexLump(_Lump):
+class _VertexLump(_StructLump):
     """
     The vertexes lump stores lists of vertices used to describe faces. There
     are a total of length / sizeof(vertex) records in the lump, where length is
@@ -129,7 +155,7 @@ class _VertexLump(_Lump):
 
 
 @_lump_class(_LumpEnum.FACES)
-class _FaceLump(_Lump):
+class _FaceLump(_StructLump):
     """
     The faces lump stores information used to render the surfaces of the map.
 
@@ -159,6 +185,20 @@ class _FaceLump(_Lump):
         vert_indices = range(unpacked[3], unpacked[3] + unpacked[4])
         self._bsp.faces.append(
             Face(verts=[self._bsp.verts[i] for i in vert_indices])) 
+
+@_lump_class(_LumpEnum.ENTITIES)
+class _EntitiesLump(_Lump):
+    """
+    The entities lump stores game-related map information, including
+    information about the map name, weapons, health, armor, triggers, spawn
+    points, lights, and .md3 models to be placed in the map. The lump contains
+    only one record, a string that describes all of the entities:
+
+    """
+    def _read(self):
+        self._bsp_file.seek(self._offset)
+        self._bsp.entities = self._bsp_file.read(self._length).decode('ascii')
+
 
 class _SeekableFile():
     """
@@ -217,7 +257,8 @@ class Bsp():
             for lump_num, cls in _lump_classes.items()
         }
 
-        _lump_readers[_LumpEnum.VERTEXES].read()
-        _lump_readers[_LumpEnum.FACES].read()
+        _lump_readers[_LumpEnum.VERTEXES]._read()
+        _lump_readers[_LumpEnum.FACES]._read()
+        _lump_readers[_LumpEnum.ENTITIES]._read()
 
 
