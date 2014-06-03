@@ -18,6 +18,7 @@ A camera object has the following attributes::
 A light object has the following attributes::
     .. location:: Coordinates of the light.
     .. color:: A triple representing an RGB value.
+    .. intensity:: A float representing the light's intensity.
 
 """
 
@@ -147,9 +148,11 @@ class _SdlWriter():
     def _write_light(self, light):
         with self._block("light_source"):
             self._output_line(self._vert_to_str(light.location))
-            if hasattr(light, "color"):
-                self._output_line("color {}".format(
-                    self._vert_to_str(light.color)))
+            color = getattr(light, "color", (1., 1., 1.))
+            color = tuple(x * 0.0001 * light.intensity for x in color)
+
+            self._output_line("color {}".format(
+                self._vert_to_str(color)))
 
     def write(self):
         self._write_camera(self._scene.camera)
