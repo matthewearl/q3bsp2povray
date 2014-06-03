@@ -77,7 +77,7 @@ class _XmlWriter():
 
                 # Multiplicand chosen to "look right"
                 self._output_line(_Tag("power",
-                                       fval=(.1 * light.intensity)))
+                                       fval=(1. * light.intensity)))
 
                 if hasattr(light, "color"):
                     self._output_line(_Tag("color",
