@@ -3,9 +3,11 @@ __all__ = (
     'write',
 )
 
+import contextlib
+
 class _Tag():
-    def __init__(self, name, *, **params):
-        self.name = name
+    def __init__(self, _tag_name, **params):
+        self.name = _tag_name
         self.params = params
 
     @property
@@ -44,31 +46,38 @@ class _XmlWriter():
         self._output_line(tag.closing_tag)
 
     def _write_mesh(self):
-        with self._in_tag(_Tag("mesh")):
+        num_tris = len(list(self._scene.tris))
+        with self._in_tag(_Tag("mesh",
+                               vertices=(3 * num_tris),
+                               faces=num_tris)):
             for tri in self._scene.tris:
                 for point in tri:
                     self._output_line(_Tag("p",
                                       x=point[0],
                                       y=point[1],
-                                      z=point[2])):
+                                      z=point[2]))
 
             self._output_line(_Tag("set_material", sval="white"))
-            for idx, tri in scene.tris:
+            for idx, tri in enumerate(self._scene.tris):
                 self._output_line(_Tag("f",
                                   a=(3 * idx),
                                   b=(3 * idx + 1),
                                   c=(3 * idx + 2)))
 
     def _write_lights(self):
-        for light in self._scene.lights:
-            with self._in_tag(_Tag("light")):
+        for idx, light in enumerate(self._scene.lights):
+            with self._in_tag(_Tag("light",
+                                   name="light{}".format(idx))):
+                self._output_line(_Tag("type",
+                                       sval="pointlight"))
                 self._output_line(_Tag("from",
                                        x=light.location[0],
                                        y=light.location[1],
                                        z=light.location[2]))
 
+                # Multiplicand chosen to "look right"
                 self._output_line(_Tag("power",
-                                       fval=light.intensity,
+                                       fval=(100. * light.intensity)))
 
                 if hasattr(light, "color"):
                     self._output_line(_Tag("color",
@@ -79,12 +88,15 @@ class _XmlWriter():
     def _write_camera(self):
         with self._in_tag(_Tag("camera", name="cam")):
             self._output_line(_Tag("type", sval="perspective"))
-            self._output_line(_Tag("up", x=0, y=1, z=0))
+            self._output_line(_Tag("up",
+                                   x=self._scene.camera.location[0],
+                                   y=(1. + self._scene.camera.location[1]),
+                                   z=self._scene.camera.location[2]))
             self._output_line(_Tag("from",
                                    x=self._scene.camera.location[0],
                                    y=self._scene.camera.location[1],
                                    z=self._scene.camera.location[2]))
-            self._output_line(_Tag("look_at",
+            self._output_line(_Tag("to",
                                    x=self._scene.camera.look_at[0],
                                    y=self._scene.camera.look_at[1],
                                    z=self._scene.camera.look_at[2]))
@@ -155,10 +167,10 @@ class _XmlWriter():
 	<ystart ival="0"/>
 	<z_channel bval="true"/>
 </render>
-"""
+""")
             
-    def _write(self):
-        with self._in_tag(Tag("scene")):
+    def write(self):
+        with self._in_tag(_Tag("scene", type="triangle")):
             self._write_materials()
             self._write_camera()
             self._write_lights()
@@ -166,3 +178,12 @@ class _XmlWriter():
             self._write_mesh()
 
 def write(xml_file, scene):
+    """
+    Write a scene to an XML file
+
+    """
+
+    xml_writer = _XmlWriter(xml_file, scene)
+    xml_writer.write()
+
+

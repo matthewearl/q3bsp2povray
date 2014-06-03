@@ -61,7 +61,8 @@ class _BspTri():
     def __len__(self):
         return len(self._verts)
 
-_BspLight = collections.namedtuple('_BspLight', ['location', 'color'])
+_BspLight = collections.namedtuple('_BspLight',
+        ['location', 'color', 'intensity'])
 
 class BspScene():
     """
