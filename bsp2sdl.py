@@ -14,6 +14,7 @@ import sys
 import povray.sdl
 import q3.bsp
 import q3.fs
+import yafaray.xml
 
 
 def warn(s):
@@ -123,7 +124,10 @@ def _parse_args(in_args):
     parser.add_argument("--baseq3", "-b",
             help="Directory containing pk3 files", required=True)
     parser.add_argument("--map", "-m", help="The map to view", required=True)
-    parser.add_argument("--output-file", "-o", help="SDL output file")
+    parser.add_argument("--output-file", "-o", help="Output .pov/.xml file")
+    parser.add_argument("--yafaray", "-y",
+                        help="Output a Yafaray XML file",
+                        action='store_true')
 
     return parser.parse_args(in_args)
 
@@ -138,7 +142,10 @@ def main(argv):
     with fs.open("maps/{}.bsp".format(args.map)) as bsp_file:
         bsp = q3.bsp.Bsp(bsp_file)
         scene = BspScene(bsp)
-        povray.sdl.write(sdl_file, scene)
+
+        write_fn = yafaray.xml.write if args.yafaray else povray.sdl.write
+
+        write_fn(sdl_file, scene)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

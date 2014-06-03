@@ -52,6 +52,7 @@ class _XmlWriter():
                                       y=point[1],
                                       z=point[2])):
 
+            self._output_line(_Tag("set_material", sval="white"))
             for idx, tri in scene.tris:
                 self._output_line(_Tag("f",
                                   a=(3 * idx),
@@ -87,6 +88,24 @@ class _XmlWriter():
                                    x=self._scene.camera.look_at[0],
                                    y=self._scene.camera.look_at[1],
                                    z=self._scene.camera.look_at[2]))
+
+    def _write_materials(self):
+        self._xml_file.write("""
+<material name="white">
+	<IOR fval="1"/>
+	<color r="1" g="1" b="1" a="1"/>
+	<diffuse_reflect fval="1"/>
+	<emit fval="0"/>
+	<fresnel_effect bval="false"/>
+	<mirror_color r="1" g="1" b="1" a="1"/>
+	<specular_reflect fval="0"/>
+	<translucency fval="0"/>
+	<transmit_filter fval="1"/>
+	<transparency fval="0"/>
+	<type sval="shinydiffusemat"/>
+</material>
+""")
+
     def _write_render(self):
         self._xml_file.write(""" 
 <background name="world_background">
@@ -140,6 +159,7 @@ class _XmlWriter():
             
     def _write(self):
         with self._in_tag(Tag("scene")):
+            self._write_materials()
             self._write_camera()
             self._write_lights()
             self._write_render()
