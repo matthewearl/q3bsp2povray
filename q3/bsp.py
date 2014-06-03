@@ -45,6 +45,12 @@ class _LumpEnum:
     
     COUNT = 17
 
+class _FaceType:
+    POLYGON = 1
+    PATCH = 2
+    MESH = 3
+    BILLBOARD = 4
+
 _lump_classes = {}
 
 
@@ -150,6 +156,23 @@ class _VertexLump(_StructLump):
                  z=unpacked[1]))
 
 
+@_lump_class(_LumpEnum.MESHVERTS)
+class _MeshVertexLump(_StructLump):
+    """
+    Please see http://www.mralligator.com/q3/#Meshverts for details of this
+    lump.
+
+    """
+
+    _struct_fmt = "<I"
+
+    def _start_lump(self):
+        self._bsp.meshverts = []
+
+    def _read_from_unpacked(self, unpacked): 
+        self._bsp.meshverts.append(unpacked[0])
+
+
 @_lump_class(_LumpEnum.FACES)
 class _FaceLump(_StructLump):
     """
@@ -164,9 +187,27 @@ class _FaceLump(_StructLump):
         self._bsp.faces = []
 
     def _read_from_unpacked(self, unpacked): 
-        vert_indices = range(unpacked[3], unpacked[3] + unpacked[4])
-        self._bsp.faces.append(
-            Face(verts=[self._bsp.verts[i] for i in vert_indices])) 
+        face_type = unpacked[2]
+        vertex = unpacked[3]
+        n_vertexes = unpacked[4]
+        meshvert = unpacked[5]
+        n_meshverts = unpacked[6]
+
+        if face_type in (_FaceType.POLYGON, _FaceType.MESH): 
+            vert_indices = range(vertex, vertex + n_vertexes)
+            verts = [self._bsp.verts[i] for i in vert_indices]
+
+            assert n_meshverts % 3 == 0
+            for idx in range(meshvert, meshvert + n_meshverts, 3):
+                self._bsp.faces.append(
+                        Face(verts=[verts[self._bsp.meshverts[idx + i]]
+                                        for i in range(3)]))
+
+        elif face_type == _FaceType.MESH:
+            vert_indices = [vertex + self._bsp.meshverts[i]
+                                for i in range(meshvert, meshvert + n_meshverts)]
+        else:
+            pass
 
 @_lump_class(_LumpEnum.ENTITIES)
 class _EntitiesLump(_Lump):
@@ -239,6 +280,7 @@ class Bsp():
         }
 
         _lump_readers[_LumpEnum.VERTEXES]._read()
+        _lump_readers[_LumpEnum.MESHVERTS]._read()
         _lump_readers[_LumpEnum.FACES]._read()
         _lump_readers[_LumpEnum.ENTITIES]._read()
 
