@@ -104,9 +104,6 @@ class BspScene():
             else:
                 color = light_ent["_color"]
 
-            # Scale color by the "light" attribute, and an arbitrary constant.
-            color = tuple(x * 0.0001 * light_ent['light'] for x in color)
-
             yield _BspLight(location=light_ent['origin'],
                             color=color,
                             intensity=light_ent['light'])

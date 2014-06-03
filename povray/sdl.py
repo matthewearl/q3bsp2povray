@@ -149,7 +149,7 @@ class _SdlWriter():
         with self._block("light_source"):
             self._output_line(self._vert_to_str(light.location))
             color = getattr(light, "color", (1., 1., 1.))
-            color = tuple(x * 0.0001 * light.intensity for x in color)
+            color = tuple(x * 0.001 * light.intensity for x in color)
 
             self._output_line("color {}".format(
                 self._vert_to_str(color)))
