@@ -202,10 +202,6 @@ class _FaceLump(_StructLump):
                 self._bsp.faces.append(
                         Face(verts=[verts[self._bsp.meshverts[idx + i]]
                                         for i in range(3)]))
-
-        elif face_type == _FaceType.MESH:
-            vert_indices = [vertex + self._bsp.meshverts[i]
-                                for i in range(meshvert, meshvert + n_meshverts)]
         else:
             pass
 
