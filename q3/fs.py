@@ -1,32 +1,9 @@
 
+import io
 import os
 import os.path
 import zipfile
 
-class _SeekableFile():
-    """
-    Wrap a ZipFile to support more file-like methods.
-
-    This implementation reads the entire file into memory.
-
-    """
-
-    def __init__(self, f):
-        self._data = f.read() 
-        self._offs = 0
-
-    def seek(self, offs):
-        self._offs = offs
-
-    def tell(self):
-        return self._offs
-
-    def read(self, count):
-        new_offs = self._offs + count
-        out = self._data[self._offs:new_offs]
-        self._offs = new_offs
-
-        return out
 
 class FileSystem():
     def __init__(self, pk3_paths):
@@ -42,7 +19,6 @@ class FileSystem():
             self._dir_dict.update(
                 { name: zip_file for name in zip_file.namelist() })
 
-
     @classmethod
     def from_dir(cls, path):
         """Initialise a Q3 Filesystem given a base directory."""
@@ -52,7 +28,6 @@ class FileSystem():
                         if full.endswith(".pk3") and
                             os.path.isfile(full))
         return cls(pk3_paths)
-
 
     @property
     def paths(self):
@@ -69,5 +44,9 @@ class FileSystem():
             raise KeyError("There is no item named {} in the "
                            "filesystem".format(path))
 
-        return _SeekableFile(zip_file.open(path))
+        # The default ZipFile doesn't support seeking, so wrap it.
+        with zip_file.open(path) as f:
+            out_f = io.BytesIO(f.read())
+
+        return out_f
 
