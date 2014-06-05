@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
 """
-Load Colors
+Module to calculate the average colour for a Quake 3 texture.
 
-Read texture data for a Quake 3 BSP and calculate the average color for each
-texture.
+When run as a script produces a HTML file showing the average color for each
+texture in a given map, along with the original image.
 
-The output can be used as input to bsp2sdl.
-
-Note this script requires pillow (or equivalent) to be installed.
+Note this module requires pillow (or equivalent) to be installed.
 
 """
 
@@ -20,6 +18,7 @@ __all__ = (
 
 
 import argparse
+import os
 import sys
 
 from PIL import Image
@@ -40,6 +39,16 @@ def _open_tex_file(fs, tex_name):
 
     return fs.open(tex_path)
 
+
+def _tex_name_to_image_name(tex_name):
+    return tex_name.replace("/", "__") + ".jpg"
+
+
+def _save_image(fs, tex_name, image_dir):
+    tex_file = _open_tex_file(fs, tex_name)
+    
+    im = Image.open(tex_file)
+    im.save(os.path.join(image_dir, _tex_name_to_image_name(tex_name)))
 
 def calculate_color(fs, tex_name):
     """
@@ -79,6 +88,9 @@ def _parse_args(in_args):
     parser.add_argument("--map", "-m", 
                         help="The map whose textures are to be cached",
                         required=True)
+    parser.add_argument("--dir", "-d", 
+                        help="Output dir for HTML resources",
+                        required=True)
 
     return parser.parse_args(in_args)
 
@@ -88,6 +100,10 @@ def _color_to_hex(color):
 def main(argv):
     args = _parse_args(argv)
 
+    images_dir = os.path.join(args.dir, "images")
+    os.makedirs(images_dir, exist_ok=True)
+    html_file = open(os.path.join(args.dir, "index.html"), "w")
+
     fs = q3.fs.FileSystem.from_dir(args.baseq3)
 
     with fs.open("maps/{}.bsp".format(args.map)) as bsp_file:
@@ -96,13 +112,16 @@ def main(argv):
             try:
                 color = calculate_color(fs, tex_name)
             except KeyError as e:
-                print("!! {}".format(e))
+                print("<p>!! {}</p>".format(e), file=html_file)
             else:
-                print(color)
-                print('<span style="background-color:{};width:40;float:left;">'
-                        .format(_color_to_hex(color)))
-                print('x</span>')
-                print("<p>{} {}</p>".format(color, tex_name))
+                print("<p>{} {}</p>".format(tex_name, color), file=html_file)
+                print('<div align="center" '
+                      'style="padding:100px;background-color:{};width:100%;">'
+                        .format(_color_to_hex(color)), file=html_file)
+                print('<img src="images/{}" />'.format(
+                    _tex_name_to_image_name(tex_name)), file=html_file)
+                print('</div>', file=html_file)
+                _save_image(fs, tex_name, images_dir)
 
 
 if __name__ == "__main__":
