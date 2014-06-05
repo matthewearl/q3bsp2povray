@@ -1,12 +1,16 @@
 
 """
+
 Scene object attributes:
+    .. materials:: A mapping of material names onto materials.
     .. tris::  An iterable of triangle objects (see below).
     .. camera:: A camera object (see below).
     .. lights:: An iterable of light objects (see below).
 
-A triangle object is a triple of vertices (vertex objects). A vertex object is
-a triple of coordinates.
+A triangle object when iterated yields its vertices (vertex objects). A vertex
+object is a triple of coordinates. A triangle also has the following
+attributes::
+    .. material:: A material object (see below).
 
 A camera object has the following attributes::
     .. type:: (Optional.) An instance of `CameraType` describing the camera type.
@@ -19,6 +23,12 @@ A light object has the following attributes::
     .. location:: Coordinates of the light.
     .. color:: A triple representing an RGB value.
     .. intensity:: A float representing the light's intensity.
+
+A material object has the following attributes::
+    .. name:: An identifying name. This is the same as the key for the scene's `materials`
+        attribute.
+    .. color:: An RGB triple of colour value in the range 0 - 1, representing
+        the surface color.
 
 """
 

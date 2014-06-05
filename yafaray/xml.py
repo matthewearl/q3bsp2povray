@@ -8,6 +8,7 @@ import contextlib
 #@@@ Make these more general and not hardcoded.
 _OUTPUT_SIZE = (800, 600)
 _CAMERA_FOCAL = 0.5
+_INTEGRATOR = "photon"
 
 class _Tag():
     def __init__(self, _tag_name, **params):
@@ -61,8 +62,8 @@ class _XmlWriter():
                                       y=point[1],
                                       z=point[2]))
 
-            self._output_line(_Tag("set_material", sval="white"))
             for idx, tri in enumerate(self._scene.tris):
+                self._output_line(_Tag("set_material", sval=tri.material.name))
                 self._output_line(_Tag("f",
                                   a=(3 * idx),
                                   b=(3 * idx + 1),
@@ -112,21 +113,15 @@ class _XmlWriter():
                                    fval=_CAMERA_FOCAL))
 
     def _write_materials(self):
-        self._xml_file.write("""
-<material name="white">
-	<IOR fval="1"/>
-	<color r="1" g="1" b="1" a="1"/>
-	<diffuse_reflect fval="1"/>
-	<emit fval="0"/>
-	<fresnel_effect bval="false"/>
-	<mirror_color r="1" g="1" b="1" a="1"/>
-	<specular_reflect fval="0"/>
-	<translucency fval="0"/>
-	<transmit_filter fval="1"/>
-	<transparency fval="0"/>
-	<type sval="shinydiffusemat"/>
-</material>
-""")
+        for mat in self._scene.materials.values():
+            with self._in_tag(_Tag("material", name=mat.name):
+                self._output_line(_Tag("type",
+                                       sval="shinydiffuse"))
+                self._output_line(_Tag("color",
+                                       r=mat.color[0],
+                                       g=mat.color[1],
+                                       b=mat.color[2],
+                                       a=1))
 
     def _write_render(self):
         self._xml_file.write(""" 
@@ -136,7 +131,7 @@ class _XmlWriter():
 	<type sval="constant"/>
 </background>
 
-<integrator name="default">
+<integrator name="photon">
 	<bounces ival="3"/>
 	<caustic_mix ival="5"/>
 	<diffuseRadius fval="1"/>
@@ -144,13 +139,16 @@ class _XmlWriter():
 	<fg_samples ival="32"/>
 	<finalGather bval="true"/>
 	<photons ival="200000"/>
-	<raydepth ival="4"/>
-	<search ival="150"/>
+	<raydepth ival="4"/> <search ival="150"/>
 	<shadowDepth ival="2"/>
 	<show_map bval="false"/>
 	<transpShad bval="false"/>
 	<type sval="photonmapping"/>
 	<use_background bval="false"/>
+</integrator>
+
+<integrator name="direct">
+    <raydepth ival="2"/>
 </integrator>
 
 <integrator name="volintegr">
@@ -168,7 +166,7 @@ class _XmlWriter():
 	<clamp_rgb bval="true"/>
 	<filter_type sval="mitchell"/>
 	<gamma fval="2.2"/>
-	<integrator_name sval="default"/>
+	<integrator_name sval="{integrator}"/>
 	<threads ival="8"/>
 	<volintegrator_name sval="volintegr"/>
 	<width ival="{width}"/>
@@ -177,7 +175,9 @@ class _XmlWriter():
 	<ystart ival="0"/>
 	<z_channel bval="true"/>
 </render>
-""".format(width=_OUTPUT_SIZE[0], height=_OUTPUT_SIZE[1]))
+""".format(width=_OUTPUT_SIZE[0],
+           height=_OUTPUT_SIZE[1],
+           integrator=_INTEGRATOR))
             
     def write(self):
         with self._in_tag(_Tag("scene", type="triangle")):

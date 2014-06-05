@@ -18,6 +18,7 @@ __all__ = (
 
 Face = collections.namedtuple('Face',
     ['verts',
+     'texture',
     ]) 
 
 Vert = collections.namedtuple('Vert',
@@ -190,12 +191,15 @@ class _FaceLump(_StructLump):
         self._bsp.faces = []
 
     def _read_from_unpacked(self, unpacked): 
+        texture_idx = unpacked[0]
         face_type = unpacked[2]
         vertex = unpacked[3]
         n_vertexes = unpacked[4]
         meshvert = unpacked[5]
         n_meshverts = unpacked[6]
         patch_size = (unpacked[24], unpacked[25])
+
+        texture = self._bsp.textures[texture_idx]
 
         if face_type in (_FaceType.POLYGON, _FaceType.MESH): 
             # `vertex` and `n_vertex` describe the vertices of the mesh/poly.
@@ -207,7 +211,8 @@ class _FaceLump(_StructLump):
             assert n_meshverts % 3 == 0
             for idx in range(meshvert, meshvert + n_meshverts, 3):
                 self._bsp.faces.append(
-                        Face(verts=[verts[self._bsp.meshverts[idx + i]]
+                        Face(texture=texture,
+                             verts=[verts[self._bsp.meshverts[idx + i]]
                                         for i in range(3)]))
         if face_type == _FaceType.PATCH:
             # `vertex` and `n_vertex` describe the control points of the patch.
@@ -224,11 +229,13 @@ class _FaceLump(_StructLump):
             for j in range(patch_size[1] - 1):
                 for i in range(patch_size[0] - 1):
                     self._bsp.faces.append(
-                        Face(verts=[verts[i, j],
+                        Face(texture=texture,
+                             verts=[verts[i, j],
                                     verts[i + 1, j],
                                     verts[i + 1, j + 1]]))
                     self._bsp.faces.append(
-                        Face(verts=[verts[i, j],
+                        Face(texture=texture,
+                             verts=[verts[i, j],
                                     verts[i + 1, j + 1],
                                     verts[i, j + 1]]))
         else:

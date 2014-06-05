@@ -11,6 +11,7 @@ import collections
 import pprint
 import sys
 
+import loadcolors
 import povray.sdl
 import q3.bsp
 import q3.fs
@@ -49,11 +50,15 @@ class _BspCamera():
         self.comment += pprint.pformat(target_ent, 4)
         self.comment += "\n"
 
+_BspMaterial = collections.namedtuple('_BspMaterial',
+        ['name', 'color'])
+
 class _BspTri():
-    def __init__(self, *verts, comment=""):
+    def __init__(self, *verts, material, comment=""):
         assert len(verts) == 3
         self._verts = verts
         self.comment = comment
+        self.material = material
 
     def __iter__(self):
         return iter(self._verts)
@@ -71,6 +76,7 @@ class BspScene():
     This satifies the definition of a scene, described in `povray.sdl`.
 
     """
+
     @property
     def tris(self):
         """
@@ -92,6 +98,7 @@ class BspScene():
                        first_vert,
                        face.verts[vert_idx - 1],
                        face.verts[vert_idx],
+                       material=self.materials[face.texture.name],
                        comment=comment)
 
     @property
@@ -104,6 +111,9 @@ class BspScene():
             else:
                 color = light_ent["_color"]
 
+            # Scale color by the "light" attribute, and an arbitrary constant.
+            color = tuple(x * 0.0001 * light_ent['light'] for x in color)
+
             yield _BspLight(location=light_ent['origin'],
                             color=color,
                             intensity=light_ent['light'])
@@ -112,9 +122,22 @@ class BspScene():
     def camera(self):
         return _BspCamera(self._bsp)
 
+    def _make_material(self, tex):
+        try:
+            color = loadcolors.calculate_color(self._fs, tex.name)
+        except Exception as e:
+            color = (0., 1., 0.)
 
-    def __init__(self, bsp):
+        return _BspMaterial(name=tex.name, color=color)
+
+    def __init__(self, bsp, fs):
         self._bsp = bsp
+        self._fs = fs
+
+        self.materials = {
+            tex.name: self._make_material(tex)
+                for tex in self._bsp.textures
+        }
 
 
 def _parse_args(in_args):
@@ -139,7 +162,7 @@ def main(argv):
 
     with fs.open("maps/{}.bsp".format(args.map)) as bsp_file:
         bsp = q3.bsp.Bsp(bsp_file)
-        scene = BspScene(bsp)
+        scene = BspScene(bsp, fs)
 
         write_fn = yafaray.xml.write if args.yafaray else povray.sdl.write
 
