@@ -3,6 +3,31 @@ import os
 import os.path
 import zipfile
 
+class _SeekableFile():
+    """
+    Wrap a ZipFile to support more file-like methods.
+
+    This implementation reads the entire file into memory.
+
+    """
+
+    def __init__(self, f):
+        self._data = f.read() 
+        self._offs = 0
+
+    def seek(self, offs):
+        self._offs = offs
+
+    def tell(self):
+        return self._offs
+
+    def read(self, count):
+        new_offs = self._offs + count
+        out = self._data[self._offs:new_offs]
+        self._offs = new_offs
+
+        return out
+
 class FileSystem():
     def __init__(self, pk3_paths):
         """Initialize a Q3 Filesystem given a list of PK3 files."""
@@ -44,5 +69,5 @@ class FileSystem():
             raise KeyError("There is no item named {} in the "
                            "filesystem".format(path))
 
-        return zip_file.open(path)
+        return _SeekableFile(zip_file.open(path))
 

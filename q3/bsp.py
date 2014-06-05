@@ -271,28 +271,6 @@ class _TextureLump(_StructLump):
             flags=unpacked[1],
             contents=unpacked[2]))
 
-class _SeekableFile():
-    """
-    It turns out files read from a zip aren't seekable.
-
-    Wrap the file-like objects so that they are.
-
-    """
-
-    def __init__(self, f):
-        self._data = f.read() 
-        self._offs = 0
-
-    def seek(self, offs):
-        self._offs = offs
-
-    def read(self, count):
-        new_offs = self._offs + count
-        out = self._data[self._offs:new_offs]
-        self._offs = new_offs
-
-        return out
-
 
 _LumpEntry = collections.namedtuple('_LumpEntry', ['offset', 'length'])
 
@@ -316,7 +294,7 @@ class Bsp():
             self._lump_dir[lump_num] = self._read_lump_entry()
         
     def __init__(self, bsp_file): 
-        self._bsp_file = _SeekableFile(bsp_file)
+        self._bsp_file = bsp_file
 
         self._read_lump_dir()
 
