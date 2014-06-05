@@ -12,13 +12,20 @@ Note this script requires pillow (or equivalent) to be installed.
 
 """
 
+
 __all__ = (
     'calculate_color',
     'main'
 )
 
+
+import argparse
+import sys
+
 from PIL import Image
 
+import q3.bsp
+import q3.fs
 
 def _open_tex_file(fs, tex_name):
     def match(path):
@@ -81,14 +88,21 @@ def _color_to_hex(color):
 def main(argv):
     args = _parse_args(argv)
 
+    fs = q3.fs.FileSystem.from_dir(args.baseq3)
+
     with fs.open("maps/{}.bsp".format(args.map)) as bsp_file:
         bsp = q3.bsp.Bsp(bsp_file)
         for tex_name in (tex.name for tex in bsp.textures):
-            color = calculate_color(fs, tex_name),
-            print('<span style="background-color:{};width:40;float:left;">'
-                    .format(_color_to_hex(color)))
-            print('x</span>')
-            print("<p>{} {}</p>".format(color, name))
+            try:
+                color = calculate_color(fs, tex_name)
+            except KeyError as e:
+                print("!! {}".format(e))
+            else:
+                print(color)
+                print('<span style="background-color:{};width:40;float:left;">'
+                        .format(_color_to_hex(color)))
+                print('x</span>')
+                print("<p>{} {}</p>".format(color, tex_name))
 
 
 if __name__ == "__main__":
