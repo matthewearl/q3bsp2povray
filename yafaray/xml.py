@@ -5,6 +5,10 @@ __all__ = (
 
 import contextlib
 
+#@@@ Make these more general and not hardcoded.
+_OUTPUT_SIZE = (800, 600)
+_CAMERA_FOCAL = 0.5
+
 class _Tag():
     def __init__(self, _tag_name, **params):
         self.name = _tag_name
@@ -77,7 +81,7 @@ class _XmlWriter():
 
                 # Multiplicand chosen to "look right"
                 self._output_line(_Tag("power",
-                                       fval=(1. * light.intensity)))
+                                       fval=(30. * light.intensity)))
 
                 if hasattr(light, "color"):
                     self._output_line(_Tag("color",
@@ -100,6 +104,12 @@ class _XmlWriter():
                                    x=self._scene.camera.look_at[0],
                                    y=self._scene.camera.look_at[1],
                                    z=self._scene.camera.look_at[2]))
+            self._output_line(_Tag("resx",
+                                   ival=_OUTPUT_SIZE[0]))
+            self._output_line(_Tag("resy",
+                                   ival=_OUTPUT_SIZE[1]))
+            self._output_line(_Tag("focal",
+                                   fval=_CAMERA_FOCAL))
 
     def _write_materials(self):
         self._xml_file.write("""
@@ -158,16 +168,16 @@ class _XmlWriter():
 	<clamp_rgb bval="true"/>
 	<filter_type sval="mitchell"/>
 	<gamma fval="2.2"/>
-	<height ival="375"/>
 	<integrator_name sval="default"/>
-	<threads ival="1"/>
+	<threads ival="8"/>
 	<volintegrator_name sval="volintegr"/>
-	<width ival="375"/>
+	<width ival="{width}"/>
+	<height ival="{height}"/>
 	<xstart ival="0"/>
 	<ystart ival="0"/>
 	<z_channel bval="true"/>
 </render>
-""")
+""".format(width=_OUTPUT_SIZE[0], height=_OUTPUT_SIZE[1]))
             
     def write(self):
         with self._in_tag(_Tag("scene", type="triangle")):
