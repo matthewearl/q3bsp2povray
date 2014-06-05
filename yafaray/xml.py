@@ -141,14 +141,14 @@ class _XmlWriter():
 	<photons ival="200000"/>
 	<raydepth ival="4"/> <search ival="150"/>
 	<shadowDepth ival="2"/>
-	<show_map bval="false"/>
+	<show_map bval="true"/>
 	<transpShad bval="false"/>
 	<type sval="photonmapping"/>
 	<use_background bval="false"/>
 </integrator>
 
 <integrator name="direct">
-	<raydepth ival="2"/>
+	<raydepth ival="0"/>
 	<type sval="directlighting"/>
 </integrator>
 
