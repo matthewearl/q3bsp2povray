@@ -114,9 +114,9 @@ class _XmlWriter():
 
     def _write_materials(self):
         for mat in self._scene.materials.values():
-            with self._in_tag(_Tag("material", name=mat.name):
+            with self._in_tag(_Tag("material", name=mat.name)):
                 self._output_line(_Tag("type",
-                                       sval="shinydiffuse"))
+                                       sval="shinydiffusemat"))
                 self._output_line(_Tag("color",
                                        r=mat.color[0],
                                        g=mat.color[1],
@@ -148,7 +148,8 @@ class _XmlWriter():
 </integrator>
 
 <integrator name="direct">
-    <raydepth ival="2"/>
+	<raydepth ival="2"/>
+	<type sval="directlighting"/>
 </integrator>
 
 <integrator name="volintegr">
